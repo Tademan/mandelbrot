@@ -1,4 +1,3 @@
-from mpmath import mp
 
 def mandela(x,y,limit=1000):
     a = x+y*1j
