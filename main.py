@@ -14,26 +14,46 @@ class Kartta:
         for x in range(koko[0]):
             for y in range(koko[1]):
                 pygame.draw.rect(näyttö,väri,pygame.rect(x*zoom,y*zoom,zoom,zoom),5)
+def anna_s_väri(i,div=50):
+    if i == 0:
+        return (0,0,0)
+    a = anna_väri(i//div)
+    b = anna_väri(i//div-1)
+    c = [0,0,0]
+    p = i/div-i//div
+    for l in range(3):
+        c[l] = a[l]*p+b[l]*(1-p)
+    return c
+
+
 def anna_väri(a):
     if a == 0:
         return (0,0,0)
     if a > 0:
-        d = (5432519*a+43728462378)%255
-        e = (5432443 * a + 865930478543) % 255
-        f = (32153483 * a + 786979272043) % 255
+        d = (5432519*a+43728442)%255
+        e = (5432443 * a + 86593047) % 255
+        f = (32153483 * a + 786979) % 255
         return (d,e,f)
     else:
         return (a%255,a//255%255,a//255//255%255)
-def piirrä(näyttö, y, tarkkuus,paikka,zoom,font,viiva):
+def piirrä(näyttö, y, tarkkuus,paikka,zoom,font,viiva,iteraatio):
     #näyttö.fill((255, 255, 255))
     korkeus = näyttö.get_height()
     leveys = näyttö.get_width()
-    for x in range(int(leveys/tarkkuus)):
+    if y%2 == 0 and tarkkuus > 32:
+        step = 2
+        alku = 1
+    else:
+        step = 1
+        alku = 0
+    maxsi = 0
+    for x in range(alku,int(leveys/tarkkuus),step):
         xd = paikka[0] + x * tarkkuus / leveys / zoom
         yd = paikka[1] + y * tarkkuus / korkeus / zoom
-        a = mandela(xd,yd,500)
+        a = mandela(xd,yd,iteraatio+10)
+        maxsi = max(a,maxsi)
         if tarkkuus != 1:
-            pygame.draw.rect(näyttö, anna_väri(a), pygame.Rect(x * tarkkuus, y * tarkkuus, tarkkuus, tarkkuus))
+            pygame.draw.rect(näyttö, anna_s_väri(a), pygame.Rect(x * tarkkuus, y * tarkkuus, tarkkuus, tarkkuus))
         else:
 
             näyttö.set_at((x,y),anna_väri(a))
@@ -41,12 +61,13 @@ def piirrä(näyttö, y, tarkkuus,paikka,zoom,font,viiva):
         pygame.draw.rect(näyttö, (255,0,0), pygame.Rect(0, (y+1) * tarkkuus, leveys, tarkkuus))
 
 
-    text = font.render(str(math.log2(zoom)), 1, (0,0,0))
+    text = font.render(str(math.log2(zoom))+" "+str(int(iteraatio)), 1, (0,0,0))
     textpos = text.get_rect()
     textpos.x = 0
     textpos.y = 50
     näyttö.blit(text, textpos)
     pygame.display.flip()
+    return maxsi
 
 def main():
     pygame.init()
@@ -58,9 +79,10 @@ def main():
     Hiiri = [0, 0, 0]
     y = 0
     tarkkuus = 128
-    paikka = [-0.7301169027344635, -0.22486268996447342]
-    zoom = 262144
-    viiva = 1
+    paikka = [-1.2667939860678072, -0.17764198683945104]
+    zoom = 1024
+    viiva = 0
+    iteraatio = 200
     while True:
         # Näppäimet
         for event in pygame.event.get():
@@ -72,13 +94,14 @@ def main():
                     paikka[0]+=1/zoom*(m[0]/leveys)
                     paikka[1] += 1 / zoom *(m[1]/korkeus)
                     tarkkuus = 128
-                    viiva = 1
                 elif event.button == 5:
+
+                    paikka[0] -= 1 / zoom/2
+                    paikka[1] -= 1 / zoom / 2
                     zoom /= 2
                     tarkkuus = 128
                     if tarkkuus == 0:
                         tarkkuus = 1
-                    viiva = 1
             if event.type == pygame.VIDEORESIZE:
                 old_surface_saved = näyttö
                 näyttö = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
@@ -114,10 +137,14 @@ def main():
                     viiva = 0
                 if event.key == pygame.K_p:
                     print(paikka,zoom,tarkkuus)
+                if event.key == pygame.K_l:
+                    iteraatio += 100
+                if event.key == pygame.K_k:
+                    iteraatio -= 100
             if event.type == pygame.KEYUP:
                 pass
 
-        piirrä(näyttö,y,tarkkuus,paikka,zoom,font,viiva)
+        iteraatio = max(piirrä(näyttö,y,tarkkuus,paikka,zoom,font,viiva,iteraatio),iteraatio)
         korkeus = näyttö.get_height()
         leveys = näyttö.get_width()
         clock.tick(1200)
